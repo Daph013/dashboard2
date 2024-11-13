@@ -1,0 +1,21 @@
+1) npm create vite@latest .
+2) npm install (ejecutar npm run dev)
+3) npm install react-bootstrap bootstrap
+4) npm install react-router-dom 
+5) npm install react-bootstrap-icons --save
+6) npm install sweetalert2
+7) npm i react-data-table-component
+8) npm i axios
+   npm i react-icons recharts
+
+9) importar los archivos de bootstrap en el Main.jsx antes de index.css
+    import "bootstrap/dist/css/bootstrap.min.css";
+
+   
+10) Limpiar proyecto
+    borrar el contenido de App.css e Index.css
+    eliminar la carpeta assets
+    limpiar el app.jsx
+11) Crear carpetas components y pages dentro de src 
+12) crear los componentes principales header, main, footer y aplicar (rafce)
+13) crear las paginas 
