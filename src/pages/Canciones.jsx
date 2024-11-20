@@ -1,65 +1,120 @@
-import React from 'react'
 import { useEffect, useRef, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
+import { Dropdown } from 'primereact/dropdown';
 import { Toast } from 'primereact/toast';
-import { FilterMatchMode } from 'primereact/api';
+
+// para el filtro
+import { FilterMatchMode} from 'primereact/api';
 import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
-import { Dropdown } from 'primereact/dropdown';
+//import { InputText } from 'primereact/inputtext';
+
+
 const Canciones = () => {
+
   const [datos, setDatos] = useState([]);
+  const [autores, setAutores] = useState([]);
+  const [generos, setGeneros] = useState([]);
+
   const [visible, setVisible] = useState(false);
-  const [cancion, setCancion] = useState({idautor:'', autor:'', Titulo: '', interprete: '', genero:'', });
+  const [canciones, setCanciones] = useState({ idautor: '',idgenero: '', interprete: '', titulo: '', url:'' });
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [cancionToDelete, setCancionToDelete] = useState(null);
   const toast = useRef(null);
 
-  const API         = 'http://localhost/musicback/api/canciones/getCancion.php';
-  const POST_API    = 'http://localhost/musicback/api/cancion/postcancion.php';
-  const UPDATE_API  = 'http://localhost/musicback/api/cancion/updatecancion.php';
-  const DELETE_API  = 'http://localhost/musicback/api/cancion/deletecancion.php';
-  
+  //Api para datos 
+  const API       = 'http://localhost/musicback/api/cancion/getCancion.php';
+  const API2       = 'http://localhost/musicback/api/autor/getAutor.php';
+  const API3       = 'http://localhost/musicback/api/genero/getGenero.php';
+
+  //Acciones
+  const POST_API  = 'http://localhost/musicback/api/cancion/postCancion.php';
+  const UPDATE_API  = 'http://playlist3.test/back/api/autor/updateautor.php';
+  const DELETE_API = 'http://localhost/musicback/api/cancion/deleteCancion.php';
+
+  const tiposUsuario = [
+    { label: 'Administrador', value: '1' },
+    { label: 'Operador', value: '2' },
+    { label: 'Usuario', value: '3' }
+  ];
+
   useEffect(() => {
     fetchDatos();
+    fetchAutores();
+    fetchGeneros();
   }, []);
 
   const fetchDatos = async () => {
-    try {
-      const response = await fetch(API);
-      const data = await response.json();
-      setDatos(data);
-    } catch (error) {
-      console.error('Error al obtener los datos:', error);
-      toast.current.show({ severity: 'error', summary: 'Error', detail: 'Error al obtener los datos.', life: 3000 });
-    }
+    const response = await fetch(API);
+    const data = await response.json();
+    setDatos(data);
   };
+  const fetchAutores = async () => {
+    try {
+        const response = await fetch(API2);
+        if (!response.ok) {
+            throw new Error('Error al cargar autores');
+        }
+        const data = await response.json();
+        
+        // Transformar los datos a la estructura requerida para el Dropdown
+        const formattedData = data.map(autor => ({
+            label: autor.nombre, // Cambia 'nombre' si tu propiedad tiene otro nombre
+            value: autor.id // Cambia 'id' si tu propiedad tiene otro nombre
+        }));
+        
+        setAutores(formattedData);
+    } catch (error) {
+        console.error('Error al cargar autores:', error);
+    }
+};
+const fetchGeneros = async () => {
+  try {
+      const response = await fetch(API3);
+      if (!response.ok) {
+          throw new Error('Error al cargar generos');
+      }
+      const data = await response.json();
+      
+      // Transformar los datos a la estructura requerida para el Dropdown
+      const formattedData = data.map(genero => ({
+          label: genero.nombre, // Cambia 'nombre' si tu propiedad tiene otro nombre
+          value: genero.id // Cambia 'id' si tu propiedad tiene otro nombre
+      }));
+      
+      setGeneros(formattedData);
+  } catch (error) {
+      console.error('Error al cargar generos:', error);
+  }
+};
+  
 
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
-  const [filters, setFilters] = useState({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  });
-
-  const onGlobalFilterChange = (e) => {
+  // para el filtro
+const [globalFilterValue, setGlobalFilterValue] = useState('');
+const [filters, setFilters] = useState({
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+ });
+ const onGlobalFilterChange = (e) => {
     const value = e.target.value;
     let _filters = { ...filters };
     _filters['global'].value = value;
     setFilters(_filters);
     setGlobalFilterValue(value);
-  };
+};
 
   const openNew = () => {
-    setCancion({ Titulo: '' });
+    setCanciones({idautor: '',idgenero: '', interprete: '', titulo: '' ,url:'', });
     setIsEditing(false);
     setVisible(true);
   };
 
-  const editCancion = (rowData) => {
-    setCancion(rowData);
+  const editCancion = (canciones) => {
+    setCanciones(canciones);
     setIsEditing(true);
     setVisible(true);
   };
@@ -67,7 +122,7 @@ const Canciones = () => {
   const saveCancion = async (event) => {
     event.preventDefault();
     const method = isEditing ? 'PUT' : 'POST';
-    const url = isEditing ? `${UPDATE_API}?id=${cancion.id}` : POST_API;
+    const url = isEditing ? `${UPDATE_API}?id=${canciones.id}` : POST_API;
 
     try {
       const response = await fetch(url, {
@@ -75,9 +130,8 @@ const Canciones = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(cancion),
+        body: JSON.stringify(canciones),
       });
-      console.log(cancion)
       const result = await response.json();
 
       if (response.ok) {
@@ -96,6 +150,7 @@ const Canciones = () => {
   const confirmDelete = (id) => {
     setCancionToDelete(id);
     setConfirmDeleteVisible(true);
+    console.log(id)
   };
 
   const deleteCancion = async () => {
@@ -113,100 +168,128 @@ const Canciones = () => {
         toast.current.show({ severity: 'error', summary: 'Error', detail: result.message || 'Error desconocido', life: 3000 });
       }
     } catch (error) {
-      console.error('Error al eliminar la cancion:', error);
+      console.error('Error al eliminar el cancion:', error);
       toast.current.show({ severity: 'error', summary: 'Error', detail: 'Error al eliminar la cancion.', life: 3000 });
     } finally {
       setConfirmDeleteVisible(false);
       setCancionToDelete(null);
     }
   };
-
   const footer = (
     <div>
       <Button label="Cancelar" icon="pi pi-times" onClick={() => setVisible(false)} className="p-button-text text-white" />
-      <Button label="Grabar" icon="pi pi-check" onClick={saveCancion} className='btn btn-outline-success' />
+      <Button label="Grabar" icon="pi pi-check" onClick={saveCancion}  className='btn btn-outline-success'/>
     </div>
   );
 
+  //console.log(openNew)
   return (
     <main className='main-container'>
       <Toast ref={toast} />
-      <div className='col-md-7 mx-auto'>
-        <h4 className='text-center'>Canciones</h4>
-        <div className='d-flex justify-content-center'>
-          <Button label="Agregar una cancion" icon="pi pi-plus" onClick={openNew} className='btn btn-outline-info my-3' />
-        </div>
-        <div className="d-flex justify-content-center py-3">
-
-          <IconField iconPosition=" ">
-          
-            <InputIcon className="pi pi-search" />
-            <InputText value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Filtrar por " className="w-full px-4" />
-          </IconField>
-        </div>
-        <DataTable
-          value={datos}
-          filters={filters}
-          paginator rows={10}
-          rowsPerPageOptions={[5, 10, 25, 50]}
-        >
-          <Column field="id" header="ID" sortable />
-          <Column field="titulo" header="Titulo" sortable />
-          <Column field="interprete" header="Interprete" sortable />
-          <Column field="genero" header="Genero" sortable />
-          <Column field="url" header="URL" sortable />
-          <Column className='text-center' header="Acciones" body={(rowData) => (
-            <>
-              <Button icon="pi pi-pencil" onClick={() => editCancion(rowData)} className='btn btn-outline-success me-2'> Editar</Button>
-              <Button icon="pi pi-trash" onClick={() => confirmDelete(rowData.id)} className='btn btn-outline-danger'> Eliminar</Button>
-            </>
-          )} />
-        </DataTable>
-        <Dialog header="Editar Cancion" visible={visible} footer={footer} onHide={() => setVisible(false)} style={{ width: '50vw' }}>
-          <form className="p-fluid">
-            <div className="mb-3">
-              <label htmlFor="titulo" className="form-label">Titulo</label>
-              <InputText
-                id="nombre"
-                className="w-full"
-                value={cancion.Titulo}
-                onChange={(e) => setCancion({ ...cancion, nombre: e.target.value })}
-              />
-              <hr />
-                  <label htmlFor="interprete" className="form-label">Interprete</label>
-              <InputText
-                id="interprete"
-                className="w-full"
-                value={cancion.interprete}
-                onChange={(e) => setCancion({ ...cancion, Interprete: e.target.value })}
-              />
-              <hr />
-              <label htmlFor="url" className="form-label">Link de YouTube</label>
-              <InputText
-                id="url"
-                className="w-full"
-                value={cancion.url}
-                onChange={(e) => setCancion({ ...cancion, Interprete: e.target.value })}
-              />
-              <hr />
-      
-              
-            </div>
-          </form>
-        </Dialog>
-        <Dialog header="Confirmar Eliminación" visible={confirmDeleteVisible} footer={
-          <div>
-               <Button label="No" icon="pi pi-times" onClick={() => setConfirmDeleteVisible(false)}  className="p-button-text text-white"/>
-               <Button label="Sí" icon="pi pi-check" onClick={deleteCancion} className='btn btn-outline-danger' />
-          </div>
-        } onHide={() => setConfirmDeleteVisible(false)}>
-          <p>¿Estás seguro de que deseas eliminar esta cancion? Esta acción no se puede deshacer.</p>
-        </Dialog>
+      <h4 className='text-center'>Canciones</h4>
+      <div className='d-flex justify-content-end'>
+          <Button label="Agregar una cancion" icon="pi pi-plus" onClick={openNew} className='btn btn-outline-success my-3' />
       </div>
-    </main>
-  );
-}
-  
+      <div className="d-flex justify-content-end py-2 gap-2">
+          <IconField iconPosition="">
+              <InputIcon className="pi pi-search " />
+              <InputText className='px-4' value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Filtrar por "  />
+          </IconField>
+      </div>
 
+
+
+      <DataTable 
+      value={datos} 
+      filters={filters}
+      paginator rows={10}
+      rowsPerPageOptions={[5, 10, 25, 50]}
+       >
+        <Column field="id" header="ID" sortable />
+        <Column field="titulo" header="Titulo" sortable />
+        <Column field="interprete" header="Interprete" sortable />
+        <Column field="genero" header="Genero" sortable />
+        <Column field="autor" header="Autor" sortable />
+        <Column field="url" header="URl Video" />
+        <Column 
+          header="Acciones" 
+          body={(rowData) => (
+              <>
+                  <Button icon="pi pi-pencil" onClick={() => editCancion(rowData)} className='btn btn-outline-warning btn-sm mb-2'> Editar</Button>
+                  <Button icon="pi pi-trash" onClick={() => confirmDelete(rowData.id)} className='btn btn-outline-danger btn-sm'> Eliminar</Button>
+              </>
+          )} 
+    headerStyle={{ textAlign: 'center' }} // Centrar el título
+    bodyStyle={{ textAlign: 'center' }} // Centrar el contenido de la columna
+/>
+      </DataTable>
+
+      <Dialog header="Editar Cancion" visible={visible} footer={footer} onHide={() => setVisible(false)} style={{ width: '50vw' }}>
+        <form className="p-fluid">
+          <div className="mb-3">
+            <label htmlFor="idautor" className="form-label">Autor</label>
+            <Dropdown
+              id="idautor"
+              value={autores.id}
+              options={autores}
+              onChange={(e) => setCanciones({ ...canciones, idautor: e.value })}
+              placeholder="Seleccione un Autor"
+              className="w-full"
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="idgenero" className="form-label">Genero</label>
+            <Dropdown
+              id="idgenero"
+              value={canciones.idgenero}
+              options={generos}
+              onChange={(e) => setCanciones({ ...canciones, idgenero: e.value })}
+              placeholder="Seleccione un Genero"
+              className="w-full"
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="titulo" className="form-label">Titulo</label>
+            <InputText
+              id="titulo"
+              className="w-full"
+              value={canciones.nombre}
+              onChange={(e) => setCanciones({ ...canciones, titulo: e.target.value })}
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="interprete" className="form-label">Interprete</label>
+            <InputText
+              id="interprete"
+              className="w-full"
+              value={canciones.interprete}
+              onChange={(e) => setCanciones({ ...canciones, interprete: e.target.value })}
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="url" className="form-label">URL</label>
+            <InputText
+              type="url"
+              id="url"
+              className="w-full"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={canciones.url}
+              onChange={(e) => setCanciones({ ...canciones, url: e.target.value })}
+            />
+          </div>
+        </form>
+      </Dialog>
+
+      <Dialog header="Confirmar Eliminación" visible={confirmDeleteVisible} footer={
+        <div>
+          <Button label="No" icon="pi pi-times" onClick={() => setConfirmDeleteVisible(false)}  className="p-button-text text-white"/>
+          <Button label="Sí" icon="pi pi-check" onClick={deleteCancion} className='btn btn-outline-danger' />
+        </div>
+      } onHide={() => setConfirmDeleteVisible(false)}>
+        <p>¿Estás seguro de que deseas eliminar esta cancion? Esta acción no se puede deshacer.</p>
+      </Dialog>
+    </main>
+  )
+}
 
 export default Canciones
